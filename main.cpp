@@ -10,6 +10,8 @@ struct Square {
     int col;
 };
 
+enum Side { White, Black };
+
 class Board {
 private:
     char board[8][8];
@@ -25,6 +27,8 @@ private:
     Square selected_square = {-1, -1};
     Square last_move_from = {-1, -1};
     Square last_move_to = {-1, -1};
+
+    Side side_to_move = White;
 
     void load_textures() {
         for (int i = 0; i < 12; i++) {
@@ -55,6 +59,14 @@ private:
         if (row == last_move_to.row && col == last_move_to.col)
             return true;
         return false;
+    }
+
+    bool is_own_piece(int row, int col) const {
+        char piece = board[row][col];
+        if (piece == ' ')
+            return false;
+        Side side = std::isupper(piece) ? White : Black;
+        return side == side_to_move;
     }
 
 public:
@@ -108,10 +120,10 @@ public:
         int row = pos.y / square_size;
         Square sq = {row, col};
 
-        if (!square_selected) {
+        if (is_own_piece(row, col)) {
             selected_square = sq;
             square_selected = true;
-        } else {
+        } else if (square_selected) {
             move(sq);
         }
     }
@@ -126,6 +138,8 @@ public:
         square_selected = false;
         last_move_from = from;
         last_move_to = to;
+
+        side_to_move = (side_to_move == White) ? Black : White;
     }
 };
 
