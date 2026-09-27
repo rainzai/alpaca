@@ -5,12 +5,26 @@
 constexpr int board_size = 768;
 constexpr int square_size = board_size / 8;
 
+struct Square {
+    int row;
+    int col;
+};
+
 class Board {
 private:
     char board[8][8];
     Texture2D textures[12];
+    Color light_color = {238, 238, 210, 255};
+    Color dark_color = {118, 150, 86, 255};
+    Color highlight_color = {255, 255, 51, 127};
+
     const char* order = "PNBRQKpnbrqk";
     const char* back_row = "rnbqkbnr";
+
+    bool square_selected = false;
+    Square selected_square = {-1, -1};
+    Square last_move_from = {-1, -1};
+    Square last_move_to = {-1, -1};
 
     void load_textures() {
         for (int i = 0; i < 12; i++) {
@@ -31,6 +45,16 @@ private:
                 return i;
         }
         return -1;
+    }
+
+    bool is_highlighted(int row, int col) const {
+        if (square_selected && row == selected_square.row && col == selected_square.col)
+            return true;
+        if (row == last_move_from.row && col == last_move_from.col)
+            return true;
+        if (row == last_move_to.row && col == last_move_to.col)
+            return true;
+        return false;
     }
 
 public:
@@ -58,14 +82,16 @@ public:
     }
 
     void draw() const {
-        Color light = {238, 238, 213, 255};
-        Color dark = {124, 149, 93, 255};
-
         for (int row = 0; row < 8; row++) {
             for (int col = 0; col < 8; col++) {
-                Color color = ((row + col) % 2 == 0) ? light : dark;
+                Color color = ((row + col) % 2 == 0) ? light_color : dark_color;
                 DrawRectangle(col * square_size, row * square_size, square_size, square_size,
                               color);
+
+                if (is_highlighted(row, col)) {
+                    DrawRectangle(col * square_size, row * square_size, square_size, square_size,
+                                  highlight_color);
+                }
 
                 int i = piece_index(board[row][col]);
                 if (i >= 0) {
@@ -76,12 +102,43 @@ public:
             }
         }
     }
+
+    void click(Vector2 pos) {
+        int col = pos.x / square_size;
+        int row = pos.y / square_size;
+        Square sq = {row, col};
+
+        if (!square_selected) {
+            selected_square = sq;
+            square_selected = true;
+        } else {
+            move(sq);
+        }
+    }
+
+    void move(Square sq) {
+        Square from = selected_square;
+        Square to = sq;
+
+        board[to.row][to.col] = board[from.row][from.col];
+        board[from.row][from.col] = ' ';
+
+        square_selected = false;
+        last_move_from = from;
+        last_move_to = to;
+    }
 };
 
 void run() {
     Board board;
 
     while (!WindowShouldClose()) {
+
+        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+            Vector2 pos = GetMousePosition();
+            board.click(pos);
+        }
+
         BeginDrawing();
         ClearBackground(RAYWHITE);
         board.draw();
