@@ -24,6 +24,7 @@ private:
     Color light_color = {238, 238, 210, 255};
     Color dark_color = {118, 150, 86, 255};
     Color highlight_color = {255, 255, 51, 127};
+    Color move_color = {0, 0, 0, 36};
 
     const char* order = "PNBRQKpnbrqk";
     const char* back_row = "rnbqkbnr";
@@ -74,7 +75,7 @@ private:
         return side == side_to_move;
     }
 
-    bool is_legal_pawn(Square from, Square to) {
+    bool is_legal_pawn(Square from, Square to) const {
         char piece = board[from.row][from.col];
         Side side = std::isupper(piece) ? White : Black;
 
@@ -96,14 +97,14 @@ private:
         return false;
     }
 
-    bool is_legal_knight(Square from, Square to) {
+    bool is_legal_knight(Square from, Square to) const {
         int dr = std::abs(to.row - from.row);
         int dc = std::abs(to.col - from.col);
 
         return (dr == 1 && dc == 2) || (dr == 2 && dc == 1);
     }
 
-    bool is_legal_bishop(Square from, Square to) {
+    bool is_legal_bishop(Square from, Square to) const {
         int dr = std::abs(to.row - from.row);
         int dc = std::abs(to.col - from.col);
 
@@ -114,7 +115,7 @@ private:
         return is_path_clear(from, to);
     }
 
-    bool is_legal_rook(Square from, Square to) {
+    bool is_legal_rook(Square from, Square to) const {
         int dr = std::abs(to.row - from.row);
         int dc = std::abs(to.col - from.col);
 
@@ -124,18 +125,18 @@ private:
         return false;
     }
 
-    bool is_legal_queen(Square from, Square to) {
+    bool is_legal_queen(Square from, Square to) const {
         return is_legal_bishop(from, to) || is_legal_rook(from, to);
     }
 
-    bool is_legal_king(Square from, Square to) {
+    bool is_legal_king(Square from, Square to) const {
         int dr = std::abs(to.row - from.row);
         int dc = std::abs(to.col - from.col);
 
         return (dr <= 1 && dc <= 1);
     }
 
-    bool is_path_clear(Square from, Square to) {
+    bool is_path_clear(Square from, Square to) const {
         int step_r = (to.row > from.row) - (to.row < from.row);
         int step_c = (to.col > from.col) - (to.col < from.col);
 
@@ -150,6 +151,17 @@ private:
             c += step_c;
         }
         return true;
+    }
+
+    void draw_move_marker(int row, int col) const {
+        Vector2 center = {col * square_size + square_size / 2.0f,
+                          row * square_size + square_size / 2.0f};
+
+        if (board[row][col] == ' ') {
+            DrawCircleV(center, square_size * 0.16f, move_color);
+        } else {
+            DrawRing(center, square_size * 0.40f, square_size * 0.48f, 0, 360, 0, move_color);
+        }
     }
 
 public:
@@ -194,6 +206,10 @@ public:
                     Vector2 pos = {(float)(col * square_size), (float)(row * square_size)};
                     DrawTextureEx(textures[i], pos, 0.0f, scale, WHITE);
                 }
+
+                if (square_selected && is_legal(selected_square, {row, col})) {
+                    draw_move_marker(row, col);
+                }
             }
         }
     }
@@ -225,7 +241,7 @@ public:
         side_to_move = (side_to_move == White) ? Black : White;
     }
 
-    bool is_legal(Square from, Square to) {
+    bool is_legal(Square from, Square to) const {
         if (from == to || is_own_piece(to.row, to.col)) {
             return false;
         }
